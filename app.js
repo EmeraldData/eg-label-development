@@ -120,6 +120,8 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
             selected: "spine-pocket"
         },
         page: {
+            column_class: ["spine"],
+            column_repeat: ["no"],
             dimensions: {
                 columns: 1,
                 rows: 1
@@ -152,7 +154,7 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
                 $scope.preview_scope = {
                     'copies': []
                     , 'settings': {}
-                    , 'toolbox_settings' : toolbox_settings
+                    , 'toolbox_settings': toolbox_settings
                     , 'get_cn_for': function (copy) {
                         var key = $scope.rendered_cn_key_by_copy_id[copy.id];
                         if (key) {
@@ -311,6 +313,11 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         for (var s in $scope.templates[n].settings) {
             $scope.preview_scope.settings[s] = $scope.templates[n].settings[s];
         }
+        if ($scope.templates[n].toolbox_settings) {
+            $scope.preview_scope.toolbox_settings = $scope.templates[n].toolbox_settings;
+            console.log($scope.templates[n].toolbox_settings);
+            $scope.create_print_label_table();
+        }
         egCore.hatch.setItem('cat.printlabels.default_template', n);
         $scope.save_locally();
     }
@@ -339,6 +346,7 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
                 , context: $scope.print.template_context
                 , cn_content: $scope.print.cn_template_content
                 , settings: $scope.preview_scope.settings
+                , toolbox_settings: $scope.preview_scope.toolbox_settings
             };
             $scope.template_name_list = Object.keys($scope.templates);
 
@@ -449,6 +457,7 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
                         , context: el.context
                         , cn_content: el.cn_content
                         , settings: el.settings
+                        , toolbox_settings: el.toolbox_settings
                     };
                 });
                 $scope.saveTemplate();
@@ -483,46 +492,66 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         });
     }
 
-    $scope.create_print_label_table = function() {
-        egCore.print.getPrintTemplate('item_label').then(
-            function (html) {
-                $scope.preview_scope.label_output_copies = labelOutputRowsFilter($scope.preview_scope.copies, $scope.preview_scope.toolbox_settings);
-                    var d = new Date(); //Added to table ID with 'eg_plt_' to cause $complie on $scope.print.template_content to fire due to template content change.
-                    var table = "<table id=\"eg_plt_" + d.getTime().toString() + "\" eg-print-label-table style=\"border-collapse: collapse; border: 0 solid transparent; border-spacing: 0; margin: 0;\">\n";
-                    table += "<tr class=\"{{$index % toolbox_settings.page.dimensions.rows === 0 && $index > 0 && toolbox_settings.feed_option.selected === 'sheet' ? 'page-break' : ''}}\" ng-init=\"parentIndex = $index\" ng-repeat=\"row in label_output_copies\">\n";
-                    table += "<td style=\"border: 0 solid transparent; padding: {{parentIndex % toolbox_settings.page.dimensions.rows === 0 && toolbox_settings.feed_option.selected === 'sheet' ? toolbox_settings.page.margins.top.size : parentIndex > 0 ? toolbox_settings.page.space_between_labels.vertical.size : 0}} 0 0 {{$index === 0 ? toolbox_settings.page.margins.left.size : toolbox_settings.page.space_between_labels.horizontal.size}};\" ng-repeat=\"col in row.columns\">\n";
-                    table += "<pre class=\"{{col.cls}}\" style=\"border: none; margin: 0; overflow: hidden;\" ng-if=\"col.cls === 'spine'\">\n";
-                    table += "{{col.c ? get_cn_for(col.c) : ''}}";
-                    table += "</pre>\n";
-                    table += "<pre class=\"{{col.cls}}\" style=\"border: none; margin: 0; overflow: hidden;\" ng-if=\"col.cls === 'pocket'\">\n";
-                    table += "{{col.c ? col.c.barcode : ''}}\n";
-                    table += "{{col.c ? col.c['call_number.label'] : ''}}\n";
-                    table += "{{col.c ? get_bib_for(col.c).author : ''}}\n";
-                    table += "{{col.c ? (get_bib_for(col.c).title | wrap:28:'once':'  ') : ''}}\n";
-                    table += "</pre>\n";
-                    table += "</td>\n"
-                    table += "</tr>\n";
-                    table += "</table>";
-                    html = html.replace(/\<table class\=\"labels\"(?:(?!<\/table>)(?:.|\s))+<\/table>/, table);
-                    $scope.print.template_content = html;
-            },
-            function() {
-                ng.Toast.warning("Could not create custom print labels from toolbox.");
-            }
-        );
-    };
-
-    $scope.$watch("preview_scope.toolbox_settings", function (newVal, oldVal) {
-        if (newVal && newVal != oldVal) {
-            if (newVal.feed_option.selected === 'continuous') {
-                $scope.preview_scope.toolbox_settings.page.start_position.row = 1;
-                $scope.preview_scope.toolbox_settings.page.dimensions.rows = 1;
-            }
-            if ($("table[id^='eg_plt_']").length > 0) {
-                $scope.create_print_label_table();
-            }
+    $scope.create_print_label_table = function () {
+        if ($scope.print_label_form.$valid) {
+            $scope.preview_scope.label_output_copies = labelOutputRowsFilter($scope.preview_scope.copies, $scope.preview_scope.toolbox_settings);
+            var html = $scope.print.template_content;
+            var d = new Date(); //Added to table ID with 'eg_plt_' to cause $complie on $scope.print.template_content to fire due to template content change.
+            var table = "<table id=\"eg_plt_" + d.getTime().toString() + "\" eg-print-label-table style=\"border-collapse: collapse; border: 0 solid transparent; border-spacing: 0; margin: {{toolbox_settings.page.margins.top.size}} 0 0 0;\">\n";
+            table += "<tr class=\"{{$index % toolbox_settings.page.dimensions.rows === 0 && $index > 0 && toolbox_settings.feed_option.selected === 'sheet' ? 'page-break' : ''}}\" ng-init=\"parentIndex = $index\" ng-repeat=\"row in label_output_copies\">\n";
+            table += "<td style=\"border: 0 solid transparent; padding: {{parentIndex % toolbox_settings.page.dimensions.rows === 0 && toolbox_settings.feed_option.selected === 'sheet' ? toolbox_settings.page.margins.top.size : parentIndex > 0 ? toolbox_settings.page.space_between_labels.vertical.size : 0}} 0 0 {{$index === 0 ? toolbox_settings.page.margins.left.size : toolbox_settings.page.space_between_labels.horizontal.size}};\" ng-repeat=\"col in row.columns\">\n";
+            table += "<pre class=\"{{col.cls}}\" style=\"border: none; margin: 0; overflow: hidden;\" ng-if=\"col.cls === 'spine'\">\n";
+            table += "{{col.c ? get_cn_for(col.c) : ''}}";
+            table += "</pre>\n";
+            table += "<pre class=\"{{col.cls}}\" style=\"border: none; margin: 0; overflow: hidden;\" ng-if=\"col.cls === 'pocket'\">\n";
+            table += "{{col.c ? col.c.barcode : ''}}\n";
+            table += "{{col.c ? col.c['call_number.label'] : ''}}\n";
+            table += "{{col.c ? get_bib_for(col.c).author : ''}}\n";
+            table += "{{col.c ? (get_bib_for(col.c).title | wrap:28:'once':'  ') : ''}}\n";
+            table += "</pre>\n";
+            table += "</td>\n"
+            table += "</tr>\n";
+            table += "</table>";
+            var comments = html.match(/\<\!\-\-(?:(?!\-\-\>)(?:.|\s))*\-\-\>\s*/g);
+            html = html.replace(/\<\!\-\-(?:(?!\-\-\>)(?:.|\s))*\-\-\>\s*/g, "");
+            var style = html.match(/\<style[^\>]*\>(?:(?!\<\/style\>)(?:.|\s))*\<\/style\>\s*/gi);
+            var output = style.join("\n") + comments.join("\n") + table;
+            output = output.replace(/\n+/, "\n");
+            $scope.print.template_content = style.join("\n") + comments.join("\n") + table;
         }
-    }, true);
+    }
+
+    $scope.redraw_label_table = function () {
+        if ($("table[id^='eg_plt_']").length > 0) {
+            $scope.create_print_label_table();
+        }
+    }
+
+    $scope.$watch('preview_scope.toolbox_settings.page.dimensions.columns',
+        function (newVal, oldVal) {
+            if (newVal && newVal != oldVal) {
+                var pg = $scope.preview_scope.toolbox_settings.page;
+                if (angular.isNumber(pg.dimensions.columns)) {
+                    while (pg.column_class.length > pg.dimensions.columns) {
+                        pg.column_class.splice(pg.column_class.length - 1);
+                    }
+                    while (pg.column_repeat.length > pg.dimensions.columns) {
+                        pg.column_repeat.splice(pg.column_repeat.length - 1);
+                    }
+                    while (pg.dimensions.columns > pg.column_class.length) {
+                        pg.column_class.push("spine");
+                    }
+                    while (pg.dimensions.columns > pg.column_repeat.length) {
+                        pg.column_repeat.push("no");
+                    }
+                } else {
+                    pg.column_class = ["spine"];
+                    pg.column_repeat = ["no"];
+                }
+            }
+            $scope.redraw_label_table();
+        }
+    );
 
     $scope.$watch('print.cn_template_content', function (newVal, oldVal) {
         if (newVal && newVal != oldVal) {
@@ -542,6 +571,12 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         }
     });
 
+    $scope.$watchGroup(['preview_scope.toolbox_settings.page.margins.top.size', 'preview_scope.toolbox_settings.page.margins.left.size', 'preview_scope.toolbox_settings.page.dimensions.rows', 'preview_scope.toolbox_settings.page.space_between_labels.horizontal.size', 'preview_scope.toolbox_settings.page.space_between_labels.vertical.size', 'preview_scope.toolbox_settings.page.start_position.row', 'preview_scope.toolbox_settings.page.start_position.column'], function (newVal, oldVal) {
+        if (newVal && newVal != oldVal) {
+            $scope.redraw_label_table();
+        }
+    });
+
     $scope.current_tab = 'call_numbers';
     $scope.set_tab = function (tab) {
         $scope.current_tab = tab;
@@ -553,7 +588,7 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
     return {
         link: function (scope, element, attr, ctrl) {
             function withinBounds(v) {
-                scope.$watch("preview_scope.toolbox_settings.page.dimensions.columns", function (n, o) {
+                scope.$watch("preview_scope.toolbox_settings.page.dimensions.columns", function (newVal, oldVal) {
                     ctrl.$setValidity("egWithinPrintColumnBounds", scope.preview_scope.valid_print_label_start_column())
                 });
                 return v;
@@ -569,7 +604,7 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
     return {
         link: function (scope, element, attr, ctrl) {
             function withinBounds(v) {
-                scope.$watch("preview_scope.toolbox_settings.page.dimensions.rows", function (n, o) {
+                scope.$watch("preview_scope.toolbox_settings.page.dimensions.rows", function (newVal, oldVal) {
                     ctrl.$setValidity("egWithinPrintRowBounds", scope.preview_scope.valid_print_label_start_row());
                 });
                 return v;
@@ -728,15 +763,15 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
 .filter("labelOutputRows", function () {
     return function (copies, settings) {
         var cols = [], rows = [];
-        for (var j = 0; j < (settings.page.start_position.row - 1); j++) {
+        for (var j = 0; j < (settings.page.start_position.row - 1) ; j++) {
             cols = [];
             for (var k = 0; k < settings.page.dimensions.columns; k++) {
                 cols.push({ c: null, index: k, cls: getPrintLabelOutputClass(k, settings) });
             }
-            rows.push({columns: cols});
+            rows.push({ columns: cols });
         }
         cols = [];
-        for (var j = 0; j < (settings.page.start_position.column - 1); j++) {
+        for (var j = 0; j < (settings.page.start_position.column - 1) ; j++) {
             cols.push({ c: null, index: j, cls: getPrintLabelOutputClass(j, settings) });
         }
         for (var j = 0; j < copies.length; j++) {
@@ -749,11 +784,11 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
                 }
             }
             if (cols.length == settings.page.dimensions.columns) {
-                rows.push({columns: cols});
+                rows.push({ columns: cols });
                 cols = [];
             }
         }
-        cols.length > 0 ? rows.push({columns: cols}) : false;
+        cols.length > 0 ? rows.push({ columns: cols }) : false;
         if (rows.length > 0) {
             while ((rows[(rows.length - 1)].columns.length) < settings.page.dimensions.columns) {
                 rows[(rows.length - 1)].columns.push({ c: null, index: rows[(rows.length - 1)].columns.length, cls: getPrintLabelOutputClass(rows[(rows.length - 1)].columns.length, settings) });
@@ -833,5 +868,5 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
 });
 
 function getPrintLabelOutputClass(index, settings) {
-    return settings.mode.selected != "spine-pocket" ? settings.mode.selected.toString().replace("-only", "") : $("#eg_print_label_column_spec_" + (index) % settings.page.dimensions.columns).length > 0 ? $("#eg_print_label_column_spec_" + (index) % settings.page.dimensions.columns).val() : settings.mode.selected.toString().replace("-only", "");
+    return settings.mode.selected != "spine-pocket" ? settings.mode.selected.toString().replace("-only", "") : $("#eg_print_label_column_spec_" + (index) % settings.page.dimensions.columns).length > 0 ? $("#eg_print_label_column_spec_" + (index) % settings.page.dimensions.columns).val() : "spine";
 }

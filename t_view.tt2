@@ -217,13 +217,13 @@
                             <h3>Custom Print Label Toolbox</h3>
                             <p>Use the form below to customize your label template to print multiple labels per sheet. You can continue to use the font and spacing customizations on the "Settings" tab to edit the appearance of each label. Use the "left label" settings for spine labels, and "right label" settings for the pocket labels.</p>
                         </div>
-                        <form name="print_label_form">
+                        <form id="print_label_form" name="print_label_form">
                             <div class="eg-print-label-section">
                                 <h4>Print Option</h4>
                                 <ul>
                                     <li ng-repeat="x in preview_scope.toolbox_settings.mode.options">
                                         <label>{{x.label}}:</label>
-                                        <input name="label-output-mode" ng-model="preview_scope.toolbox_settings.mode.selected" type="radio" value="{{x.value}}" />
+                                        <input name="label-output-mode" ng-model="preview_scope.toolbox_settings.mode.selected" ng-change="redraw_label_table()" type="radio" value="{{x.value}}" />
                                     </li>
                                 </ul>
                             </div>
@@ -232,7 +232,7 @@
                                 <ul>
                                     <li ng-repeat="x in preview_scope.toolbox_settings.feed_option.options">
                                         <label>{{x.label}}:</label>
-                                        <input name="label-feed-option" ng-model="preview_scope.toolbox_settings.feed_option.selected" type="radio" value="{{x.value}}" />
+                                        <input name="label-feed-option" ng-model="preview_scope.toolbox_settings.feed_option.selected" ng-change="redraw_label_table()" type="radio" value="{{x.value}}" />
                                     </li>
                                 </ul>
                             </div>
@@ -280,7 +280,7 @@
                                     </li>
                                     <li>
                                         <label>Column:</label>
-                                        <input type="number" eg-print-label-valid-int="" eg-print-label-column-bounds ng-model="preview_scope.toolbox_settings.page.start_position.column" ng-min="1" required />
+                                        <input type="number" eg-print-label-valid-int="" eg-print-label-column-bounds ng-model="preview_scope.toolbox_settings.page.start_position.column" ng-min="1"  required />
                                     </li>
                                 </ul>
                             </div>
@@ -290,7 +290,7 @@
                                 <ul>
                                     <li ng-repeat="i in preview_scope.toolbox_settings.page.dimensions.columns | columnRowRange">
                                         <label>Col. {{i + 1}}</label>
-                                        <select id="eg_print_label_column_spec_{{i}}">
+                                        <select id="eg_print_label_column_spec_{{i}}" ng-model="preview_scope.toolbox_settings.page.column_class[i]" ng-change="redraw_label_table()">
                                             <option value="spine">Spine</option>
                                             <option value="pocket">Pocket</option>
                                         </select>
@@ -303,13 +303,13 @@
                                 <ul>
                                     <li>
                                         <label>Col. 1</label>
-                                        <select id="eg_print_label_column_repeat_0">
+                                        <select id="eg_print_label_column_repeat_0" ng-model="preview_scope.toolbox_settings.page.column_repeat[0]">
                                             <option value="no">No</option>
                                         </select>
                                     </li>
-                                    <li ng-repeat="i in (preview_scope.toolbox_settings.page.dimensions.columns - 1) | columnRowRange">
+                                    <li ng-int="s = preview_scope" ng-repeat="i in (preview_scope.toolbox_settings.page.dimensions.columns - 1) | columnRowRange">
                                         <label>Col. {{i + 2}}</label>
-                                        <select id="eg_print_label_column_repeat_{{i + 1}}">
+                                        <select id="eg_print_label_column_repeat_{{i + 1}}" ng-model="preview_scope.toolbox_settings.page.column_repeat[i + 1]" ng-change="redraw_label_table()">
                                             <option value="no">No</option>
                                             <option value="yes">Yes</option>
                                         </select>
@@ -336,3 +336,4 @@
     </div>
     <!-- col -->
 </div>
+
