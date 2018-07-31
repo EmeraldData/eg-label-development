@@ -315,7 +315,6 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         }
         if ($scope.templates[n].toolbox_settings) {
             $scope.preview_scope.toolbox_settings = $scope.templates[n].toolbox_settings;
-            console.log($scope.templates[n].toolbox_settings);
             $scope.create_print_label_table();
         }
         egCore.hatch.setItem('cat.printlabels.default_template', n);
@@ -492,8 +491,14 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         });
     }
 
+    $scope.add_custom_print_label_table = function () {
+        var d = new Date(); //Added to table ID with 'eg_plt_' to cause $complie on $scope.print.template_content to fire due to template content change.
+        var table = "<table id=\"eg_plt_" + d.getTime().toString() + "\"\></table>\n";
+        $scope.print.template_content += table;
+    }
+
     $scope.create_print_label_table = function () {
-        if ($scope.print_label_form.$valid) {
+        if ($scope.print_label_form.$valid && $scope.print.template_content && $scope.preview_scope) {
             $scope.preview_scope.label_output_copies = labelOutputRowsFilter($scope.preview_scope.copies, $scope.preview_scope.toolbox_settings);
             var html = $scope.print.template_content;
             var d = new Date(); //Added to table ID with 'eg_plt_' to cause $complie on $scope.print.template_content to fire due to template content change.
@@ -515,21 +520,15 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
             var comments = html.match(/\<\!\-\-(?:(?!\-\-\>)(?:.|\s))*\-\-\>\s*/g);
             html = html.replace(/\<\!\-\-(?:(?!\-\-\>)(?:.|\s))*\-\-\>\s*/g, "");
             var style = html.match(/\<style[^\>]*\>(?:(?!\<\/style\>)(?:.|\s))*\<\/style\>\s*/gi);
-            var output = style.join("\n") + comments.join("\n") + table;
+            var output = (style ? style.join("\n") : "") + (comments ? comments.join("\n") : "") + table;
             output = output.replace(/\n+/, "\n");
-            $scope.print.template_content = style.join("\n") + comments.join("\n") + table;
-        }
-    }
-
-    $scope.redraw_label_table = function () {
-        if ($("table[id^='eg_plt_']").length > 0) {
-            $scope.create_print_label_table();
+            $scope.print.template_content = output;
         }
     }
 
     $scope.$watch('preview_scope.toolbox_settings.page.dimensions.columns',
         function (newVal, oldVal) {
-            if (newVal && newVal != oldVal) {
+            if (newVal && newVal != oldVal && $scope.preview_scope) {
                 var pg = $scope.preview_scope.toolbox_settings.page;
                 if (angular.isNumber(pg.dimensions.columns)) {
                     while (pg.column_class.length > pg.dimensions.columns) {
@@ -549,7 +548,8 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
                     pg.column_repeat = ["no"];
                 }
             }
-            $scope.redraw_label_table();
+            $scope.add_custom_print_label_table();
+            $scope.create_print_label_table();
         }
     );
 
@@ -572,8 +572,9 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
     });
 
     $scope.$watchGroup(['preview_scope.toolbox_settings.page.margins.top.size', 'preview_scope.toolbox_settings.page.margins.left.size', 'preview_scope.toolbox_settings.page.dimensions.rows', 'preview_scope.toolbox_settings.page.space_between_labels.horizontal.size', 'preview_scope.toolbox_settings.page.space_between_labels.vertical.size', 'preview_scope.toolbox_settings.page.start_position.row', 'preview_scope.toolbox_settings.page.start_position.column'], function (newVal, oldVal) {
-        if (newVal && newVal != oldVal) {
-            $scope.redraw_label_table();
+        if (newVal && newVal != oldVal && $scope.preview_scope.label_output_copies) {
+            $scope.add_custom_print_label_table();
+            $scope.create_print_label_table();
         }
     });
 

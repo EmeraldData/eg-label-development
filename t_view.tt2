@@ -298,10 +298,6 @@
                                 </ul>
                             </div>
                         </form>
-                        <p>
-                            <button ng-click="create_print_label_table()" ng-disabled="print_label_form.$invalid">Create Custom Label Table</button>
-                            <br />
-                        </p>
                     </div>
                 </div>
                 <div ng-show="current_tab == 'template'">
