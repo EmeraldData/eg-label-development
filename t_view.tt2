@@ -136,11 +136,6 @@
                     [% l('Label Template') %]
                 </a>
             </li>
-            <li ng-class="{active: current_tab == 'label_toolbox'}">
-                <a ng-click="set_tab('label_toolbox')">
-                    [% l('Custom Label Toolbox') %]
-                </a>
-            </li>
         </ul>
         <div class="tab-content">
             <div class="tab-pane active">
@@ -198,20 +193,6 @@
                             <div>{{s.description}}</div>
                         </div>
                     </div>
-                </div>
-                <div ng-show="current_tab == 'template'">
-                    <div ng-if="print.load_failed" class="alert alert-danger">
-                        [% l(
-                        "Unable to load template '[_1]'.  The web server returned an error.",
-                        '{{print.template_name}}')
-                        %]
-                    </div>
-                    <div>
-                        <textarea ng-model="print.template_content" class="print-template-text">
-                        </textarea>
-                    </div>
-                </div>
-                <div ng-show="current_tab == 'label_toolbox'">
                     <div class="print-label-toolbox">
                         <div class="eg-print-label-section">
                             <h3>Custom Print Label Toolbox</h3>
@@ -321,6 +302,18 @@
                             <button ng-click="create_print_label_table()" ng-disabled="print_label_form.$invalid">Create Custom Label Table</button>
                             <br />
                         </p>
+                    </div>
+                </div>
+                <div ng-show="current_tab == 'template'">
+                    <div ng-if="print.load_failed" class="alert alert-danger">
+                        [% l(
+                        "Unable to load template '[_1]'.  The web server returned an error.",
+                        '{{print.template_name}}')
+                        %]
+                    </div>
+                    <div>
+                        <textarea ng-model="print.template_content" class="print-template-text">
+                        </textarea>
                     </div>
                 </div>
             </div>
