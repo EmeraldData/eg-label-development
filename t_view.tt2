@@ -179,35 +179,11 @@
                 <div ng-show="current_tab == 'settings'">
                     <div>
                         <span>
-                            [% l('These settings do get saved with templates and will override corresponding Library Settings.') %]<br/>
+                          <b>*All settings will be saved with templates</b>
                         </span>
                     </div>
-                    <div ng-repeat="s in org_unit_settings">
-                        <div class="row" style="margin-top: 5mm; border-top: solid thin black">
-                            <div class="col-md-6" style="font-weight: bold">{{s.label}}</div>
-                            <div class="col-md-6">
-                                <input type="text" ng-model="preview_scope.settings[s.name]"></input>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div>{{s.description}}</div>
-                        </div>
-                    </div>
-                    <div class="print-label-toolbox">
-                        <div class="eg-print-label-section">
-                            <h3>Custom Print Label Toolbox</h3>
-                            <p>Use the form below to customize your label template to print multiple labels per sheet. You can continue to use the font and spacing customizations on the "Settings" tab to edit the appearance of each label. Use the "left label" settings for spine labels, and "right label" settings for the pocket labels.</p>
-                        </div>
-                        <form id="print_label_form" name="print_label_form">
-                            <div class="eg-print-label-section">
-                                <h4>Print Option</h4>
-                                <ul>
-                                    <li ng-repeat="x in preview_scope.toolbox_settings.mode.options">
-                                        <label>{{x.label}}:</label>
-                                        <input name="label-output-mode" ng-model="preview_scope.toolbox_settings.mode.selected" ng-change="redraw_label_table()" type="radio" value="{{x.value}}" />
-                                    </li>
-                                </ul>
-                            </div>
+                    <form id="print_label_form" name="print_label_form">
+                        <div class="print-label-toolbox">
                             <div class="eg-print-label-section">
                                 <h4>Print Feed Option</h4>
                                 <ul>
@@ -218,8 +194,18 @@
                                 </ul>
                             </div>
                             <div class="eg-print-label-section">
+                                <h4>Print Option</h4>
+                                <ul>
+                                    <li ng-repeat="x in preview_scope.toolbox_settings.mode.options">
+                                        <label>{{x.label}}:</label>
+                                        <input name="label-output-mode" ng-model="preview_scope.toolbox_settings.mode.selected" type="radio" value="{{x.value}}" />
+                                    </li>
+                                </ul>
+                            </div>
+                            <h3>Page Settings</h3>
+                            <div class="eg-print-label-section">
                                 <h4>Page Margins</h4>
-                                <p>Please include a unit of measurement that is valid CSS. For example, "1in" or "2.5cm"</p>
+                                <p>Must be in format "0.25in", "2.5cm", "1.5in", etc. (units of measurement must be valid CSS)</p>
                                 <ul>
                                     <li ng-repeat="(x, y) in preview_scope.toolbox_settings.page.margins">
                                         <label>{{y.label}}:</label>
@@ -229,7 +215,7 @@
                             </div>
                             <div class="eg-print-label-section">
                                 <h4>Print Grid Size</h4>
-                                <p>Please specify the number of columns and rows (if applicable) on the print medium. This setting is only used to control page layouts and breaks. It will not limit the number of rows printed, which is determined by the number of selected copies.</p>
+                                <p>Please specify the number of columns and rows (if applicable) on the print medium. This setting is only used to control page layouts and breaks. It will not limit the number of rows printed, which is determined by the number of selected copies. The column count should include each label in a row. For example, if you have a row with two sets of labels that include one spine and one pocket, the count is four.</p>
                                 <ul>
                                     <li ng-if="preview_scope.toolbox_settings.feed_option.selected === 'sheet'">
                                         <label>Rows:</label>
@@ -242,14 +228,10 @@
                                 </ul>
                             </div>
                             <div class="eg-print-label-section">
-                                <h4>Space between labels</h4>
-                                <p>Please include a unit of measurement that is valid CSS. For example, "1in" or "2.5cm"</p>
-                                <ul>
-                                    <li ng-repeat="(x, y) in preview_scope.toolbox_settings.page.space_between_labels">
-                                        <label>{{y.label}}:</label>
-                                        <input type="text" ng-model="preview_scope.toolbox_settings.page.space_between_labels[x].size" ng-min="0" eg-print-label-valid-css required />
-                                    </li>
-                                </ul>
+                                <label>Gap Between Rows</label> <input type="text" ng-model="preview_scope.toolbox_settings.page.space_between_labels.vertical.size" ng-min="0" eg-print-label-valid-css required />
+                                <p>Must be in format "0.25in", "2.5cm", "1.5in", etc. (units of measurement must be valid CSS)</p><br />
+                                <label>Gap Between Columns of a Label Set</label> <input type="text" ng-model="preview_scope.toolbox_settings.page.space_between_labels.horizontal.size" ng-min="0" eg-print-label-valid-css required />
+                                <p>Gap between a label “set” (eg gap between each spine/pocket combo). Use label 2 left margin to identify how much space to provide between labels within one set. Must be in format "0.25in", "2.5cm", "1.5in", etc. (units of measurement must be valid CSS)</p>
                             </div>
                             <div class="eg-print-label-section" ng-if="preview_scope.toolbox_settings.page.dimensions.rows > 1 || preview_scope.toolbox_settings.page.dimensions.columns > 1">
                                 <h4>Starting Position on Label Grid</h4>
@@ -265,39 +247,42 @@
                                     </li>
                                 </ul>
                             </div>
-                            <div class="eg-print-label-section" ng-if="preview_scope.valid_print_label_start_column() && preview_scope.valid_print_label_start_row() && preview_scope.toolbox_settings.mode.selected === 'spine-pocket'">
-                                <h4>Column Format Specification(s)</h4>
-                                <p>Specify whether each column should be formatted for spine or pocket labels in the print output.</p>
-                                <ul>
-                                    <li ng-repeat="i in preview_scope.toolbox_settings.page.dimensions.columns | columnRowRange">
+                            <div class="eg-print-label-section">
+                                <h4>Label Set Configuration</h4>
+                                <label>Number of Labels in Set:</label>
+                              <input type="number" eg-print-label-valid-int="" ng-min="1" ng-model="preview_scope.toolbox_settings.page.label.set.size" />
+                              <br />
+                              <br />
+                                <ul ng-if="preview_scope.valid_print_label_start_column() && preview_scope.valid_print_label_start_row() && preview_scope.toolbox_settings.mode.selected === 'spine-pocket'">
+                                    <li ng-repeat="i in preview_scope.toolbox_settings.page.label.set.size | columnRowRange">
                                         <label>Col. {{i + 1}}</label>
                                         <select id="eg_print_label_column_spec_{{i}}" ng-model="preview_scope.toolbox_settings.page.column_class[i]" ng-change="redraw_label_table()">
-                                            <option value="spine">Spine</option>
-                                            <option value="pocket">Pocket</option>
+                                            <option value="spine">Label 1</option>
+                                            <option value="pocket">Label 2</option>
                                         </select>
                                     </li>
                                 </ul>
+                              <br />
+                              <label>Space Between Labels in Set:</label>
+                              <input type="text" ng-model="preview_scope.toolbox_settings.page.label.gap.size" eg-print-label-valid-css="" />
+                            </div>                          
+                        </div>                
+                    </form>
+                    <div>
+                        <span>
+                            [% l('These settings do get saved with templates and will override corresponding Library Settings.') %]<br/>
+                        </span>
+                    </div>
+                    <div ng-repeat="s in org_unit_settings">
+                        <div class="row" style="margin-top: 5mm; border-top: solid thin black">
+                            <div class="col-md-6" style="font-weight: bold">{{s.label}}</div>
+                            <div class="col-md-6">
+                                <input type="text" ng-model="preview_scope.settings[s.name]"></input>
                             </div>
-                            <div class="eg-print-label-section" ng-if="preview_scope.valid_print_label_start_column() && preview_scope.valid_print_label_start_row() && preview_scope.toolbox_settings.mode.selected === 'spine-pocket' && preview_scope.toolbox_settings.page.dimensions.columns > 1">
-                                <h4>Column Repeat Specifications(s)</h4>
-                                <p>Specify whether each column should repeat from its predecessor in each row in the print output. The first column of each row cannot repeat.</p>
-                                <ul>
-                                    <li>
-                                        <label>Col. 1</label>
-                                        <select id="eg_print_label_column_repeat_0" ng-model="preview_scope.toolbox_settings.page.column_repeat[0]">
-                                            <option value="no">No</option>
-                                        </select>
-                                    </li>
-                                    <li ng-int="s = preview_scope" ng-repeat="i in (preview_scope.toolbox_settings.page.dimensions.columns - 1) | columnRowRange">
-                                        <label>Col. {{i + 2}}</label>
-                                        <select id="eg_print_label_column_repeat_{{i + 1}}" ng-model="preview_scope.toolbox_settings.page.column_repeat[i + 1]" ng-change="redraw_label_table()">
-                                            <option value="no">No</option>
-                                            <option value="yes">Yes</option>
-                                        </select>
-                                    </li>
-                                </ul>
-                            </div>
-                        </form>
+                        </div>
+                        <div class="row">
+                            <div>{{s.description}}</div>
+                        </div>
                     </div>
                 </div>
                 <div ng-show="current_tab == 'template'">

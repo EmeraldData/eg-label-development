@@ -111,20 +111,30 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
             ],
             selected: "continuous"
         },
+        label_set: {
+            margin_between: 0,
+            size: 1
+        },
         mode: {
             options: [
-                { label: "Spine Only", value: "spine-only" },
-                { label: "Pocket Only", value: "pocket-only" },
-                { label: "Spine & Pocket", value: "spine-pocket" }
+                { label: "Label 1 Only", value: "spine-only" },
+                { label: "Labels 1 & 2", value: "spine-pocket" }
             ],
             selected: "spine-pocket"
         },
         page: {
             column_class: ["spine"],
-            column_repeat: ["no"],
             dimensions: {
-                columns: 1,
+                columns: 2,
                 rows: 1
+            },
+            label: {
+                gap: {
+                    size: 0
+                },
+                set: {
+                    size: 2
+                }
             },
             margins: {
                 top: { size: 0, label: "Top" },
@@ -491,12 +501,6 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         });
     }
 
-    $scope.add_custom_print_label_table = function () {
-        var d = new Date(); //Added to table ID with 'eg_plt_' to cause $complie on $scope.print.template_content to fire due to template content change.
-        var table = "<table id=\"eg_plt_" + d.getTime().toString() + "\"\></table>\n";
-        $scope.print.template_content += table;
-    }
-
     $scope.create_print_label_table = function () {
         if ($scope.print_label_form.$valid && $scope.print.template_content && $scope.preview_scope) {
             $scope.preview_scope.label_output_copies = labelOutputRowsFilter($scope.preview_scope.copies, $scope.preview_scope.toolbox_settings);
@@ -504,7 +508,7 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
             var d = new Date(); //Added to table ID with 'eg_plt_' to cause $complie on $scope.print.template_content to fire due to template content change.
             var table = "<table id=\"eg_plt_" + d.getTime().toString() + "\" eg-print-label-table style=\"border-collapse: collapse; border: 0 solid transparent; border-spacing: 0; margin: {{toolbox_settings.page.margins.top.size}} 0 0 0;\">\n";
             table += "<tr class=\"{{$index % toolbox_settings.page.dimensions.rows === 0 && $index > 0 && toolbox_settings.feed_option.selected === 'sheet' ? 'page-break' : ''}}\" ng-init=\"parentIndex = $index\" ng-repeat=\"row in label_output_copies\">\n";
-            table += "<td style=\"border: 0 solid transparent; padding: {{parentIndex % toolbox_settings.page.dimensions.rows === 0 && toolbox_settings.feed_option.selected === 'sheet' ? toolbox_settings.page.margins.top.size : parentIndex > 0 ? toolbox_settings.page.space_between_labels.vertical.size : 0}} 0 0 {{$index === 0 ? toolbox_settings.page.margins.left.size : toolbox_settings.page.space_between_labels.horizontal.size}};\" ng-repeat=\"col in row.columns\">\n";
+            table += "<td style=\"border: 0 solid transparent; padding: {{parentIndex % toolbox_settings.page.dimensions.rows === 0 && toolbox_settings.feed_option.selected === 'sheet' ? toolbox_settings.page.margins.top.size : parentIndex > 0 ? toolbox_settings.page.space_between_labels.vertical.size : 0}} 0 0 {{$index === 0 ? toolbox_settings.page.margins.left.size : col.styl ? col.styl : toolbox_settings.page.space_between_labels.horizontal.size}};\" ng-repeat=\"col in row.columns\">\n";
             table += "<pre class=\"{{col.cls}}\" style=\"border: none; margin: 0; overflow: hidden;\" ng-if=\"col.cls === 'spine'\">\n";
             table += "{{col.c ? get_cn_for(col.c) : ''}}";
             table += "</pre>\n";
@@ -526,30 +530,18 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         }
     }
 
+    $scope.redraw_label_table = function () {
+        var d = new Date(); //Added to table ID with 'eg_plt_' to cause $complie on $scope.print.template_content to fire due to template content change.
+        var table = "<table id=\"eg_plt_" + d.getTime().toString() + "\"\></table>\n";
+        $scope.print.template_content += table;
+        $scope.create_print_label_table();
+    }
+
     $scope.$watch('preview_scope.toolbox_settings.page.dimensions.columns',
         function (newVal, oldVal) {
             if (newVal && newVal != oldVal && $scope.preview_scope) {
-                var pg = $scope.preview_scope.toolbox_settings.page;
-                if (angular.isNumber(pg.dimensions.columns)) {
-                    while (pg.column_class.length > pg.dimensions.columns) {
-                        pg.column_class.splice(pg.column_class.length - 1);
-                    }
-                    while (pg.column_repeat.length > pg.dimensions.columns) {
-                        pg.column_repeat.splice(pg.column_repeat.length - 1);
-                    }
-                    while (pg.dimensions.columns > pg.column_class.length) {
-                        pg.column_class.push("spine");
-                    }
-                    while (pg.dimensions.columns > pg.column_repeat.length) {
-                        pg.column_repeat.push("no");
-                    }
-                } else {
-                    pg.column_class = ["spine"];
-                    pg.column_repeat = ["no"];
-                }
+                $scope.redraw_label_table();
             }
-            $scope.add_custom_print_label_table();
-            $scope.create_print_label_table();
         }
     );
 
@@ -571,10 +563,47 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         }
     });
 
-    $scope.$watchGroup(['preview_scope.toolbox_settings.page.margins.top.size', 'preview_scope.toolbox_settings.page.margins.left.size', 'preview_scope.toolbox_settings.page.dimensions.rows', 'preview_scope.toolbox_settings.page.space_between_labels.horizontal.size', 'preview_scope.toolbox_settings.page.space_between_labels.vertical.size', 'preview_scope.toolbox_settings.page.start_position.row', 'preview_scope.toolbox_settings.page.start_position.column'], function (newVal, oldVal) {
+    $scope.$watchGroup(['preview_scope.toolbox_settings.page.margins.top.size', 'preview_scope.toolbox_settings.page.margins.left.size', 'preview_scope.toolbox_settings.page.dimensions.rows', 'preview_scope.toolbox_settings.page.space_between_labels.horizontal.size', 'preview_scope.toolbox_settings.page.space_between_labels.vertical.size', 'preview_scope.toolbox_settings.page.start_position.row', 'preview_scope.toolbox_settings.page.start_position.column', 'preview_scope.toolbox_settings.page.label.gap.size'], function (newVal, oldVal) {
         if (newVal && newVal != oldVal && $scope.preview_scope.label_output_copies) {
-            $scope.add_custom_print_label_table();
-            $scope.create_print_label_table();
+            $scope.redraw_label_table();
+        }
+    });
+
+    $scope.$watch("preview_scope.toolbox_settings.mode.selected", function (newVal, oldVal) {
+        if (newVal && newVal != oldVal) {
+            var ts_p = $scope.preview_scope.toolbox_settings.page;
+            if (ts_p.label.set.size === 1) {
+                if (newVal === "spine-pocket") {
+                    ts_p.column_class = ["spine", "pocket"];
+                    ts_p.label.set.size = 2;
+                } else {
+                    ts_p.column_class = ["spine"];
+                }
+            } else {
+                if (newVal === "spine-only") {
+                    for (var i = 0; i < ts_p.label.set.size; i++) {
+                        ts_p.column_class[i] = "spine";
+                    }
+                } else {
+                    ts_p.label.set.size === 2 ? ts_p.column_class = ["spine", "pocket"] : false;
+                }
+            }
+            $scope.redraw_label_table();
+        }
+    });
+
+    $scope.$watch("preview_scope.toolbox_settings.page.label.set.size", function (newVal, oldVal) {
+        if (newVal && newVal != oldVal) {
+            var ts_p = $scope.preview_scope.toolbox_settings.page;
+            if (angular.isNumber(newVal)) {
+                while (ts_p.column_class.length > ts_p.label.set.size) {
+                    ts_p.column_class.splice((ts_p.column_class.length - 1), 1);
+                }
+                while (ts_p.column_class.length < ts_p.label.set.size) {
+                    ts_p.column_class.push("spine");
+                }
+            }
+            $scope.redraw_label_table();
         }
     });
 
@@ -767,32 +796,33 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         for (var j = 0; j < (settings.page.start_position.row - 1) ; j++) {
             cols = [];
             for (var k = 0; k < settings.page.dimensions.columns; k++) {
-                cols.push({ c: null, index: k, cls: getPrintLabelOutputClass(k, settings) });
+                cols.push({ c: null, index: k, cls: getPrintLabelOutputClass(k, settings), styl: getPrintLabelStyle(k, settings) });
             }
             rows.push({ columns: cols });
         }
         cols = [];
         for (var j = 0; j < (settings.page.start_position.column - 1) ; j++) {
-            cols.push({ c: null, index: j, cls: getPrintLabelOutputClass(j, settings) });
+            cols.push({ c: null, index: j, cls: getPrintLabelOutputClass(j, settings), styl: getPrintLabelStyle(j, settings) });
         }
+        var m = cols.length;
         for (var j = 0; j < copies.length; j++) {
-            cols.push({ c: copies[j], index: cols.length, cls: getPrintLabelOutputClass(cols.length, settings) });
-            while ($("#eg_print_label_column_repeat_" + cols.length.toString()).length) {
-                if ($("#eg_print_label_column_repeat_" + cols.length.toString()).val() === 'yes') {
-                    cols.push({ c: copies[j], index: cols.length, cls: getPrintLabelOutputClass(cols.length, settings) });
-                } else {
-                    break;
+            for (var n = 0; n < settings.page.label.set.size; n++) {
+                if (m < settings.page.dimensions.columns) {
+                    cols.push({ c: copies[j], index: cols.length, cls: getPrintLabelOutputClass(m, settings), styl: getPrintLabelStyle(m, settings) });
+                    m += 1;
                 }
-            }
-            if (cols.length == settings.page.dimensions.columns) {
-                rows.push({ columns: cols });
-                cols = [];
+                if (m === settings.page.dimensions.columns) {
+                    m = 0;
+                    rows.push({ columns: cols });
+                    cols = [];
+                    n = settings.page.label.set.size;
+                }
             }
         }
         cols.length > 0 ? rows.push({ columns: cols }) : false;
         if (rows.length > 0) {
             while ((rows[(rows.length - 1)].columns.length) < settings.page.dimensions.columns) {
-                rows[(rows.length - 1)].columns.push({ c: null, index: rows[(rows.length - 1)].columns.length, cls: getPrintLabelOutputClass(rows[(rows.length - 1)].columns.length, settings) });
+                rows[(rows.length - 1)].columns.push({ c: null, index: rows[(rows.length - 1)].columns.length, cls: getPrintLabelOutputClass(rows[(rows.length - 1)].columns.length, settings), styl: getPrintLabelStyle(rows[(rows.length - 1)].columns.length, settings) });
             }
         }
         return rows;
@@ -869,5 +899,9 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
 });
 
 function getPrintLabelOutputClass(index, settings) {
-    return settings.mode.selected != "spine-pocket" ? settings.mode.selected.toString().replace("-only", "") : $("#eg_print_label_column_spec_" + (index) % settings.page.dimensions.columns).length > 0 ? $("#eg_print_label_column_spec_" + (index) % settings.page.dimensions.columns).val() : "spine";
+    return settings.page.column_class[index % settings.page.label.set.size];
+}
+
+function getPrintLabelStyle(index, settings) {
+    return index > 0 && (index % settings.page.label.set.size === 0) ? settings.page.label.gap.size : "";
 }
