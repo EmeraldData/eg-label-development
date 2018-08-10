@@ -651,7 +651,7 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
         require: "ngModel",
         link: function (scope, element, attr, ctrl) {
             function floatValidation(v) {
-                ctrl.$setValidity("isFloat", v.toString().match(/^(?:^0$|(?:\d+)(?:\.\d{1,})*([a-z]{2}))$/) ? true : false);
+                ctrl.$setValidity("isFloat", v.toString().match(/^\-*(?:^0$|(?:\d+)(?:\.\d{1,})*([a-z]{2}))$/) ? true : false);
                 return v;
             }
             ctrl.$parsers.push(floatValidation);

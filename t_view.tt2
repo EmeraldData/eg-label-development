@@ -2,7 +2,12 @@
     /* TODO: move me */
 
    @media print {
+        body {
+            margin: 0;
+        }
+        
         tr.page-break {
+            display: block;
             page-break-before: always;
         }
     }
@@ -209,7 +214,7 @@
                                 <ul>
                                     <li ng-repeat="(x, y) in preview_scope.toolbox_settings.page.margins">
                                         <label>{{y.label}}:</label>
-                                        <input type="text" eg-print-label-valid-css ng-model="preview_scope.toolbox_settings.page.margins[x].size" ng-min="0" required />
+                                        <input type="text" eg-print-label-valid-css ng-model="preview_scope.toolbox_settings.page.margins[x].size" required />
                                     </li>
                                 </ul>
                             </div>
