@@ -52,10 +52,15 @@
     padding: 0 0 0 0;
     }
    
+    table.custom-label-table td {
+      vertical-align: top;
+    }
+   
     .print-template-text {
     height: 36em;
     width: 100%;
     }
+    
     .cn-template-text {
     height: 12em;
     width: 100%;
