@@ -237,7 +237,7 @@
                             <div class="eg-print-label-section">
                                 <label>Gap Between Rows</label> <input type="text" ng-model="preview_scope.toolbox_settings.page.space_between_labels.vertical.size" ng-min="0" eg-print-label-valid-css required />
                                 <p>Must be in format "0.25in", "2.5cm", "1.5in", etc. (units of measurement must be valid CSS)</p><br />
-                                <label>Gap Between Columns of a Label Set</label> <!--<input type="text" ng-model="preview_scope.toolbox_settings.page.space_between_labels.horizontal.size" ng-min="0" eg-print-label-valid-css required />-->
+                                <label>Gap Between Columns of a Label Set</label>
                               <input type="text" ng-model="preview_scope.toolbox_settings.page.label.gap.size" ng-min="0" eg-print-label-valid-css required />
                                 <p>Gap between a label “set” (i.e. gap between each spine/pocket combo). Use label 2 left margin to identify how much space to provide between labels within one set. Must be in format "0.25in", "2.5cm", "1.5in", etc. (units of measurement must be valid CSS)</p>
                             </div>
@@ -271,8 +271,6 @@
                                     </li>
                                 </ul>
                               <br />
-                              <!--<label>Space Between Labels in Set:</label>
-                              <input type="text" ng-model="preview_scope.toolbox_settings.page.label.gap.size" />-->
                             </div>                          
                         </div>                
                     </form>
